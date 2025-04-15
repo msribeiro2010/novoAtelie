@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo circular rosa claro -->
+  <circle cx="256" cy="256" r="240" fill="#f8d7da" />
+  
+  <!-- Borda circular rosa mais escuro -->
+  <circle cx="256" cy="256" r="240" stroke="#e83e8c" stroke-width="8" fill="none" />
+  
+  <!-- Tesoura - Lâmina superior -->
+  <path d="M384 128L192 320C192 320 150 280 120 250C90 220 60 200 60 200C60 200 90 170 120 170C150 170 180 200 180 200L384 128Z" fill="#6c757d" stroke="#343a40" stroke-width="8" stroke-linejoin="round" />
+  
+  <!-- Tesoura - Lâmina inferior -->
+  <path d="M384 384L192 192C192 192 150 232 120 262C90 292 60 312 60 312C60 312 90 342 120 342C150 342 180 312 180 312L384 384Z" fill="#6c757d" stroke="#343a40" stroke-width="8" stroke-linejoin="round" />
+  
+  <!-- Parafuso central -->
+  <circle cx="192" cy="256" r="16" fill="#343a40" />
+  <circle cx="192" cy="256" r="8" fill="#f8f9fa" />
+  
+  <!-- Cabo da tesoura - parte superior -->
+  <path d="M120 170C100 170 80 150 90 130C100 110 130 120 140 130" stroke="#343a40" stroke-width="8" stroke-linecap="round" />
+  
+  <!-- Cabo da tesoura - parte inferior -->
+  <path d="M120 342C100 342 80 362 90 382C100 402 130 392 140 382" stroke="#343a40" stroke-width="8" stroke-linecap="round" />
+  
+  <!-- Detalhes decorativos -->
+  <circle cx="384" cy="128" r="12" fill="#e83e8c" />
+  <circle cx="384" cy="384" r="12" fill="#e83e8c" />
+</svg>
