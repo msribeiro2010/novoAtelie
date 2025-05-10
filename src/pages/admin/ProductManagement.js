@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Table, Form, Modal, Spinner, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Table, Form, Modal, Spinner, Alert, Toast, ToastContainer } from 'react-bootstrap';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../firebase/config';
@@ -15,7 +15,7 @@ const ProductManagement = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [alert, setAlert] = useState(null);
+  const [toast, setToast] = useState({ show: false, type: '', message: '' });
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [sobConsulta, setSobConsulta] = useState(false);
@@ -36,10 +36,7 @@ const ProductManagement = () => {
       setProducts(productsData);
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
-      setAlert({
-        type: 'danger',
-        message: 'Erro ao carregar produtos. Por favor, tente novamente.'
-      });
+      showToast('danger', 'Erro ao carregar produtos. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -107,10 +104,7 @@ const ProductManagement = () => {
         setImagePreview(reader.result);
         
         // Mostrar uma mensagem explicativa sobre o uso de imagens de placeholder
-        setAlert({
-          type: 'info',
-          message: 'Devido a configurações de segurança, estamos usando imagens de placeholder durante o desenvolvimento. A imagem final pode ser diferente da selecionada.'
-        });
+        showToast('info', 'Devido a configurações de segurança, estamos usando imagens de placeholder durante o desenvolvimento. A imagem final pode ser diferente da selecionada.');
       };
       reader.readAsDataURL(file);
     }
@@ -132,47 +126,29 @@ const ProductManagement = () => {
       setSubmitLoading(true);
       
       let imageUrl = editingProduct?.imagemUrl || null;
+      let imagePath = editingProduct?.imagemPath || null;
       
       // Upload new image if provided
       if (values.imagem) {
         console.log('Processando imagem selecionada...');
         
-        // Usar a URL do preview da imagem diretamente
-        // Isso contorna o problema de CORS com o Firebase Storage
-        if (imagePreview) {
-          // Usar a imagem do preview (que já foi carregada pelo FileReader)
-          imageUrl = imagePreview;
-          console.log('Usando imagem do preview para o produto');
-        } else {
-          // Fallback para placeholder se por algum motivo não houver preview
-          const fileName = values.imagem.name.toLowerCase();
-          if (fileName.includes('vestido')) {
-            imageUrl = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=300';
-          } else if (fileName.includes('blusa') || fileName.includes('camisa')) {
-            imageUrl = 'https://images.unsplash.com/photo-1562157873-818bc0726f68?q=80&w=300';
-          } else if (fileName.includes('calca') || fileName.includes('calça')) {
-            imageUrl = 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?q=80&w=300';
-          } else if (fileName.includes('saia')) {
-            imageUrl = 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?q=80&w=300';
-          } else {
-            imageUrl = 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=300';
+        // Se for uma imagem real (File), faz upload
+        if (values.imagem instanceof File) {
+          try {
+            const storagePath = `produtos/${Date.now()}_${values.imagem.name}`;
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, values.imagem);
+            imageUrl = await getDownloadURL(storageRef);
+            imagePath = storagePath;
+          } catch (imageError) {
+            console.error('Erro no upload da imagem:', imageError);
+            // Continua com placeholder se der erro
           }
-          console.log('Usando imagem de placeholder:', imageUrl);
+        } else if (imagePreview) {
+          // Se for base64/preview, só usa preview
+          imageUrl = imagePreview;
+          imagePath = null;
         }
-        
-        // Comentado devido ao problema de CORS
-        /*
-        try {
-          // Tentativa de upload para o Firebase Storage
-          const storageRef = ref(storage, `produtos/${Date.now()}_${values.imagem.name}`);
-          await uploadBytes(storageRef, values.imagem);
-          imageUrl = await getDownloadURL(storageRef);
-          console.log('Upload de imagem concluído com sucesso:', imageUrl);
-        } catch (imageError) {
-          console.error('Erro no upload da imagem:', imageError);
-          // Continuar mesmo se houver erro no upload da imagem
-        }
-        */
       }
       
       const productData = {
@@ -186,7 +162,7 @@ const ProductManagement = () => {
         categoria: values.categoria,
         disponivel: values.disponivel,
         imagemUrl: imageUrl,
-        // Usando campos consistentes para datas
+        imagemPath: imagePath || null,
         createdAt: editingProduct ? editingProduct.createdAt : serverTimestamp(),
         updatedAt: serverTimestamp(),
         sobConsulta: values.sobConsulta || false
@@ -199,19 +175,13 @@ const ProductManagement = () => {
         console.log('Atualizando produto existente com ID:', editingProduct.id);
         await updateDoc(doc(db, 'produtos', editingProduct.id), productData);
         console.log('Produto atualizado com sucesso!');
-        setAlert({
-          type: 'success',
-          message: 'Produto atualizado com sucesso!'
-        });
+        showToast('success', 'Produto atualizado com sucesso!');
       } else {
         // Create new product
         console.log('Criando novo produto...');
         const docRef = await addDoc(collection(db, 'produtos'), productData);
         console.log('Produto criado com sucesso! ID:', docRef.id);
-        setAlert({
-          type: 'success',
-          message: 'Produto criado com sucesso!'
-        });
+        showToast('success', 'Produto criado com sucesso!');
       }
       
       resetForm();
@@ -222,10 +192,7 @@ const ProductManagement = () => {
       }, 1000);
     } catch (error) {
       console.error('Erro ao salvar produto:', error);
-      setAlert({
-        type: 'danger',
-        message: `Erro ao salvar produto: ${error.message}. Por favor, tente novamente.`
-      });
+      showToast('danger', `Erro ao salvar produto: ${error.message}. Por favor, tente novamente.`);
     } finally {
       setSubmitLoading(false);
     }
@@ -237,10 +204,15 @@ const ProductManagement = () => {
     try {
       setSubmitLoading(true);
       
-      // Delete image from storage if exists
-      if (deleteConfirmation.imagemUrl) {
+      // Só deleta do Storage se imagemPath for válido
+      if (
+        deleteConfirmation.imagemPath &&
+        typeof deleteConfirmation.imagemPath === 'string' &&
+        !deleteConfirmation.imagemPath.startsWith('data:') &&
+        !deleteConfirmation.imagemPath.startsWith('http')
+      ) {
         try {
-          const imageRef = ref(storage, deleteConfirmation.imagemUrl);
+          const imageRef = ref(storage, deleteConfirmation.imagemPath);
           await deleteObject(imageRef);
         } catch (error) {
           console.error('Erro ao excluir imagem:', error);
@@ -250,19 +222,13 @@ const ProductManagement = () => {
       // Delete product document
       await deleteDoc(doc(db, 'produtos', deleteConfirmation.id));
       
-      setAlert({
-        type: 'success',
-        message: 'Produto excluído com sucesso!'
-      });
+      showToast('success', 'Produto excluído com sucesso!');
       
       handleCloseDeleteConfirmation();
       fetchProducts();
     } catch (error) {
       console.error('Erro ao excluir produto:', error);
-      setAlert({
-        type: 'danger',
-        message: 'Erro ao excluir produto. Por favor, tente novamente.'
-      });
+      showToast('danger', 'Erro ao excluir produto. Por favor, tente novamente.');
     } finally {
       setSubmitLoading(false);
     }
@@ -271,8 +237,30 @@ const ProductManagement = () => {
   const availableSizes = ['PP', 'P', 'M', 'G', 'GG', 'XG', '36', '38', '40', '42', '44', '46', '48', '50', 'Único'];
   const categories = ['Vestidos', 'Blusas', 'Calças', 'Saias', 'Conjuntos', 'Acessórios', 'Outros'];
 
+  // Função para exibir toast
+  const showToast = (type, message) => {
+    setToast({ show: true, type, message });
+  };
+
   return (
     <Container fluid className="py-4">
+      <ToastContainer
+        position="top-end"
+        className="p-3"
+        style={{ zIndex: 9999 }}
+      >
+        <Toast
+          bg={toast.type === 'danger' ? 'danger' : toast.type === 'success' ? 'success' : 'info'}
+          onClose={() => setToast({ ...toast, show: false })}
+          show={toast.show}
+          delay={3500}
+          autohide
+        >
+          <Toast.Body className="text-white">
+            {toast.message}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Gerenciar Produtos</h1>
         <Button 
@@ -283,17 +271,6 @@ const ProductManagement = () => {
           Novo Produto
         </Button>
       </div>
-      
-      {alert && (
-        <Alert 
-          variant={alert.type} 
-          onClose={() => setAlert(null)} 
-          dismissible
-          className="mb-4"
-        >
-          {alert.message}
-        </Alert>
-      )}
       
       <Card className="shadow-sm">
         <Card.Body>

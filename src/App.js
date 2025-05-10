@@ -18,6 +18,8 @@ import Services from './pages/Services';
 import QuoteRequest from './pages/QuoteRequest';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
+import Cadastro from './pages/Cadastro';
+import ClientOrders from './pages/ClientOrders';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
@@ -54,7 +56,9 @@ function App() {
             <Route path="/servicos" element={<Services />} />
             <Route path="/orcamento" element={<QuoteRequest />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/esqueci-senha" element={<ForgotPassword />} />
+            <Route path="/minhas-solicitacoes" element={<ClientOrders />} />
           </Route>
           
           {/* Admin Routes */}

@@ -298,6 +298,7 @@ const OrderManagement = () => {
                         <th>Cliente</th>
                         <th>Tipo</th>
                         <th>Item</th>
+                        <th>Descrição</th>
                         <th>Status</th>
                         <th>Ações</th>
                       </tr>
@@ -329,6 +330,7 @@ const OrderManagement = () => {
                               'Item não encontrado'
                             )}
                           </td>
+                          <td>{order.descricao || order.observacao || '-'}</td>
                           <td>{getStatusBadge(order.status)}</td>
                           <td>
                             <Button 

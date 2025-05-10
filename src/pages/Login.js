@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FaSignInAlt } from 'react-icons/fa';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,6 +12,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [resetMessage, setResetMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,6 +33,21 @@ const Login = () => {
       setError('Falha ao fazer login. Verifique seu e-mail e senha.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setError('');
+    setResetMessage('');
+    if (!email) {
+      setError('Digite seu e-mail para recuperar a senha.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(getAuth(), email);
+      setResetMessage('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+    } catch (err) {
+      setError('Erro ao enviar e-mail de recuperação.');
     }
   };
 
@@ -72,6 +89,15 @@ const Login = () => {
                   {loading ? 'Entrando...' : 'Entrar'}
                 </Button>
               </div>
+              <div className="text-center mb-2">
+                <Link to="/cadastro">Não tem conta? Cadastre-se</Link>
+              </div>
+              <div className="text-center mb-2">
+                <Button variant="link" onClick={handleResetPassword} style={{padding: 0}}>
+                  Esqueceu a senha?
+                </Button>
+              </div>
+              {resetMessage && <div className="text-success text-center small mb-2">{resetMessage}</div>}
             </Form>
           </Card.Body>
         </Card>

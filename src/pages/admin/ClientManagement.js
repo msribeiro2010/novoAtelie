@@ -28,9 +28,9 @@ const ClientManagement = () => {
     } else {
       const term = searchTerm.toLowerCase();
       const filtered = clients.filter(client => 
-        client.nome.toLowerCase().includes(term) || 
-        client.email.toLowerCase().includes(term) ||
-        client.telefone.includes(term)
+        (client.nome || '').toLowerCase().includes(term) || 
+        (client.email || '').toLowerCase().includes(term) ||
+        (client.telefone || '').includes(term)
       );
       setFilteredClients(filtered);
     }
@@ -39,7 +39,7 @@ const ClientManagement = () => {
   const handleDeleteClient = async () => {
     if (!deletingClient) return;
     try {
-      await deleteDoc(doc(db, 'clientes', deletingClient.id));
+      await deleteDoc(doc(db, 'usuarios', deletingClient.id));
       setClients(prev => prev.filter(c => c.id !== deletingClient.id));
       setFilteredClients(prev => prev.filter(c => c.id !== deletingClient.id));
       setAlert({ type: 'success', message: 'Cliente excluído com sucesso.' });
@@ -55,9 +55,12 @@ const ClientManagement = () => {
   const fetchClients = async () => {
     try {
       setLoading(true);
-      const q = query(collection(db, 'clientes'), orderBy('nome'));
+      const q = query(
+        collection(db, 'usuarios'),
+        where('perfil', '==', 'cliente'),
+        orderBy('email')
+      );
       const querySnapshot = await getDocs(q);
-
       const clientsData = [];
       querySnapshot.forEach((doc) => {
         clientsData.push({
@@ -65,7 +68,6 @@ const ClientManagement = () => {
           ...doc.data()
         });
       });
-
       setClients(clientsData);
       setFilteredClients(clientsData);
     } catch (error) {
@@ -204,9 +206,9 @@ const ClientManagement = () => {
                 <tbody>
                   {filteredClients.map((client) => (
                     <tr key={client.id}>
-                      <td>{client.nome}</td>
-                      <td>{client.email}</td>
-                      <td>{client.telefone}</td>
+                      <td>{client.nome || '-'}</td>
+                      <td>{client.email || '-'}</td>
+                      <td>{client.telefone || '-'}</td>
                       <td>{formatDate(client.dataCadastro)}</td>
                       <td>
                         <Button 
