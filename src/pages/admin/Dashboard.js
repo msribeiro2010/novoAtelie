@@ -22,7 +22,11 @@ const Dashboard = () => {
         // Fetch stats
         const produtosSnapshot = await getDocs(collection(db, 'produtos'));
         const servicosSnapshot = await getDocs(collection(db, 'servicos'));
-        const clientesSnapshot = await getDocs(collection(db, 'clientes'));
+        const clientesQuery = query(
+          collection(db, 'usuarios'),
+          where('perfil', '==', 'cliente')
+        );
+        const clientesSnapshot = await getDocs(clientesQuery);
         
         const pedidosPendentesQuery = query(
           collection(db, 'pedidos'),
